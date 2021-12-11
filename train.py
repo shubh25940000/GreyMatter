@@ -1,6 +1,8 @@
 import pandas as pd
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+import numpy as np
+
 import os
 # from dotenv import load_dotenv
 
@@ -8,13 +10,16 @@ import os
 
 
 class train:
-    def __init__(self, df, model_type, cols_encode, cols_hotencode, id_cols, target):
+    def __init__(self, df, model_type, cols_encode, cols_hotencode, id_cols, target, params, iter, gridsearch = True):
         self.df = df
         self.model_type = model_type
         self.cols_encode = cols_encode
         self.cols_hotencode = cols_hotencode
         self.id_cols = id_cols
         self.target = target
+        self.params = params
+        self.gridsearch = gridsearch
+        self.iter = iter
 
     def label_encoding(self):
         encoder = preprocessing.LabelEncoder()
@@ -34,11 +39,16 @@ class train:
             X_train = df_train.drop(self.target, axis=1)
             y_train = df_train[self.target]
         if self.model_type == 'Random_Forest':
-            pass
-
-
-
-
+            from sklearn.ensemble import RandomForestRegressor
+            from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+            rf = RandomForestRegressor(random_state=42, n_jobs=-1)
+            if self.gridsearch == False:
+                RandomSearchCV = RandomizedSearchCV(estimator = rf, param_distributions= self.params,
+                                                    cv = 4, verbose= 1, n_jobs= -1, n_iter= self.iter)
+                RandomSearchCV.fit(X_train, y_train)
+                print(RandomSearchCV.best_score_)
+                rf_best = RandomSearchCV.best_estimator_
+                return rf_best
 
 if __name__ == "__main__":
     # load_dotenv('Files/Variables.env.env')
@@ -48,8 +58,19 @@ if __name__ == "__main__":
                       'BldgType','HouseStyle','RoofStyle','RoofMatl','Exterior1st','Exterior2nd','MasVnrType',
                       'Foundation','Heating','Electrical','Functional','GarageType','GarageFinish','PavedDrive',
                       'SaleType','SaleCondition']
-    T1 = train(df, 'LinearRegression', cols_encode, cols_hotencode)
-    df = T1.hot_encoding()
+    idcols = ['Id']
+    target = 'SalePrice'
+    max_depth = [int(x) for x in np.linspace(10, 60, 5)]
+    n_estimator = [int(x) for x in np.linspace(4000, 5000, 4)]
+    min_samples_split = [int(x) for x in np.linspace(10, 100, 10)]
+    min_samples_leaf = [int(x) for x in range(3,50)]
+    params = params = {'max_depth': max_depth,
+          'n_estimators': n_estimator,
+          'min_samples_split': min_samples_split,
+           'min_samples_leaf': min_samples_leaf
+}
+    T1 = train(df, 'Random_Forest', cols_encode, cols_hotencode, idcols,target, params, 200, gridsearch=False)
+    df = T1.train_model()
 
 
 
