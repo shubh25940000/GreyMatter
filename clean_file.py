@@ -2,7 +2,7 @@ import pandas as pd
 """The main function of this file is to clean up the file.
  That includes removing nulls, removing unimportant features, handling missing values etc."""
 
-class EDA:
+class clean_file:
     def __init__(self, df):
         self.df = df
 
@@ -22,10 +22,14 @@ class EDA:
 
 if __name__ == "__main__":
     df = pd.read_csv('Files/test.csv')
-    E1 = EDA(df)
+    E1 = clean_file(df)
     df = E1.drop_nulls()
-    nulls = E1.check_nulls()
-    print(nulls)
+    df.to_csv('Files/Removed_Nulls.csv', index = False)
+
+
+
+
+
 
 
 
