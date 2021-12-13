@@ -2,6 +2,7 @@ import pandas as pd
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 import numpy as np
+from sklearn.model_selection import cross_val_score, KFold
 
 import os
 # from dotenv import load_dotenv
@@ -10,7 +11,7 @@ import os
 
 
 class train:
-    def __init__(self, df, model_type, cols_encode, cols_hotencode, id_cols, target, params, iter, gridsearch = True):
+    def __init__(self, df, model_type, cols_encode, cols_hotencode, id_cols, target, params, iter, scoring, gridsearch = True):
         self.df = df
         self.model_type = model_type
         self.cols_encode = cols_encode
@@ -20,6 +21,7 @@ class train:
         self.params = params
         self.gridsearch = gridsearch
         self.iter = iter
+        self.scoring = scoring
 
     def label_encoding(self):
         encoder = preprocessing.LabelEncoder()
@@ -31,25 +33,24 @@ class train:
         self.df = pd.concat([self.df.drop(self.cols_hotencode, axis=1), encoded], axis=1)
         return self.df
 
-    def hyperparameter_tuning(self, X_train, y_train, model):
+    def hyperparameter_tuning(self, model):
         from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+        cv_inner = KFold(n_splits=3, shuffle= True, random_state=42)
         if self.gridsearch == False:
             RandomSearchCV = RandomizedSearchCV(estimator=model, param_distributions=self.params,
-                                                cv=4, verbose=1, n_jobs=-1, n_iter=self.iter)
-            RandomSearchCV.fit(X_train, y_train)
-            print(RandomSearchCV.best_score_)
-            rf_best = RandomSearchCV.best_estimator_
-            return rf_best
+                                                cv=cv_inner, verbose=1, n_jobs=8, n_iter=self.iter, refit=True)
+            return RandomSearchCV
         else:
             GridSearchCV = GridSearchCV(estimator=model, param_grid=self.params,
-                                        cv=4, verbose=1, n_jobs=-1)
-            GridSearchCV.fit(X_train, y_train)
-            print(GridSearchCV.best_score_)
-            rf_best = GridSearchCV.best_estimator_
-            return rf_best
+                                        cv=4, verbose=1, n_jobs=8, scoring=self.scoring, refit= True)
+            return GridSearchCV
 
-    def cross_val_score(self):
-        from sklearn.model_selection import cross_val_score, KFold
+    def cross_val_scorer(self, X_train, y_train, search):
+        cv_outer = KFold(n_splits=10, shuffle=True, random_state=42)
+        score = cross_val_score(estimator = search, X=X_train, y=y_train, scoring= self.scoring, n_jobs=8,cv = cv_outer )
+        return score
+
+
 
     def train_model(self):
         encoded_df = self.hot_encoding()
@@ -60,9 +61,11 @@ class train:
         y_train = df_train[self.target]
         if self.model_type == 'Random_Forest':
             from sklearn.ensemble import RandomForestRegressor
-            rf = RandomForestRegressor(random_state=42, n_jobs=-1)
-            best_rf = self.hyperparameter_tuning(X_train, y_train, rf)
-            return best_rf
+            rf = RandomForestRegressor(random_state=42, n_jobs= 8)
+            search = self.hyperparameter_tuning(rf)
+            score = self.cross_val_scorer(X_train, y_train, search)
+            print(np.sqrt(score))
+            return search.best_estimator_
 
 if __name__ == "__main__":
     # load_dotenv('Files/Variables.env.env')
@@ -79,11 +82,12 @@ if __name__ == "__main__":
     n_estimator = [int(x) for x in np.linspace(4000, 5000, 2)]
     min_samples_split = [int(x) for x in np.linspace(10, 100, 4)]
     min_samples_leaf = [int(x) for x in range(10,15)]
+    model_type = ['Random_Forest', 'Lasso_Regression', 'Elasti_Net', 'Gradient_boosting']
     params = {'max_depth': max_depth,
           'n_estimators': n_estimator,
           'min_samples_split': min_samples_split,
            'min_samples_leaf': min_samples_leaf}
-    T1 = train(df, 'Random_Forest', cols_encode, cols_hotencode, idcols,target, params, 100, gridsearch=False)
+    T1 = train(df, 'Random_Forest', cols_encode, cols_hotencode, idcols,target, params, 100, 'neg_mean_squared_error', gridsearch=False)
     df = T1.train_model()
 
 
