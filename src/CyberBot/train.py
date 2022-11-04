@@ -65,7 +65,7 @@ class train:
 
 if __name__ == "__main__":
     # load_dotenv('Files/Variables.env.env')
-    df = pd.read_csv('Files/Sales_Clean.csv')
+    df = pd.read_csv('../../Files/Sales_Clean.csv')
     cols_encode = ['LotShape', 'Utilities','LandSlope','ExterQual','ExterCond','BsmtQual','BsmtCond', 'BsmtExposure',
                    'BsmtFinType1','BsmtFinType2', 'HeatingQC', 'CentralAir', 'KitchenQual', 'GarageQual', 'GarageCond']
     cols_hotencode = ['MSZoning','Street','LandContour','LotConfig','Neighborhood','Condition1','Condition2',

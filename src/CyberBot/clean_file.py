@@ -16,15 +16,15 @@ class clean_file:
     def drop_nulls(self):
         nulls = self.check_nulls()
         if len(nulls) > 0:
-            cols = list(nulls[nulls['NaN'] >= 25]['Columns'])
-            self.df.drop(cols, inplace=True, axis = 1)
-            return self.df
+            cols = list(nulls[nulls['NaN'] >= 15]['Columns'])
+            df.drop(cols, inplace=True, axis = 1)
+            return df
 
 if __name__ == "__main__":
-    df = pd.read_csv('Files/test.csv')
+    df = pd.read_csv('/Users/shubhamchoudhury/Documents/Data Science/Machine learning/Self training/Life Expectancy Data.csv')
     E1 = clean_file(df)
     df = E1.drop_nulls()
-    df.to_csv('Files/Removed_Nulls.csv', index = False)
+    df.to_csv('/Users/shubhamchoudhury/Documents/Data Science/Machine learning/Self training/Removed_Nulls.csv', index = False)
 
 
 
