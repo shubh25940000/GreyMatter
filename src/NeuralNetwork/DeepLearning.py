@@ -1,4 +1,5 @@
 import pandas as pd
+import tqdm
 import numpy as np
 import math
 
@@ -27,15 +28,22 @@ class DeepLearning:
         A = np.dot(W, X) + B
         return A
 
-    def costFunction(self, calculated, actual):
+    def activationOutput(self, activation, activationInput):
+        return self.activationFunction(activation)(activationInput)
+
+    def loss(self, calculated, actual):
         return (calculated - actual) ^ 2
+
+    def optimization(self, optimizer):
+        if str(optimizer).lower() == "sgd":
+            pass
 
 
 class Layer(DeepLearning):
-    def __init__(self, type_=None, shape=None, activation=None, input_=None, bias = None):
+    def __init__(self, type_=None, n_neurons = None, activation=None, input_=None, bias = None):
         super().__init__()
         self.type_ = type_
-        self.shape = shape
+        self.n_neurons = n_neurons
         self.activation = activation
         self.input_ = input_
         self.bias = bias
@@ -46,29 +54,56 @@ class Layer(DeepLearning):
             return np.array(self.input_)
         elif str(t).lower() == "hidden":
             if self.bias == None:
-                return np.random.rand(self.shape), self.activation
+                return self.activation, self.n_neurons
             else:
-                return np.random.rand(self.shape), self.activation, self.bias
+                return self.activation, self.n_neurons, self.bias
         elif str(t).lower() == "output":
-            return self.activation
+            return self.activation, self.n_neurons
 
-
-class Train(Layer):
-    def __init__(self,  layers, epochs, type_=None, shape=None, activation=None, input_=None, bias = None):
-        Layer().__init__(type_=None, shape=None, activation=None, input_=None, bias = None)
+class Train(DeepLearning):
+    def __init__(self,  layers, epochs):
+        super().__init__()
         self.layers = layers
         self.epochs = epochs
 
     def train(self):
-        pass
-
+        X = self.layers[0]
+        np.random.seed(seed=42)
+        output = self.layers[-1]
+        for i in range(self.epochs):
+            if i == 0:
+                ####Forward pass
+                n_input_features = X[1] #784
+                n_input_rows = X[0] #60000
+                for j in self.layers[1:-1]:
+                    ####Initializing random weights and bias
+                    W = np.random.rand(n_input_features, j[1])
+                    B = np.random.rand(n_input_rows, 1)
+                    hiddeninput_ = self.activationInput(X, W, B)
+                    k = self.activationOutput(j[0], hiddeninput_)
+                    X = k #60000X700
+                    n_input_features = X[1]
+                    n_input_rows = X[0]
+                W = np.random.rand(n_input_features, output[1])
+                B = np.random.rand(n_input_rows, 1)
+                hiddeninput_ = self.activationInput(X, W, B)
+                outputCalculated =  self.activationOutput(output[0], hiddeninput_)
+            else:
+                pass
 
 
 if __name__ == "__main__":
-    inputLayer = Layer(type_ = "input", shape = [60000, 784]).output()
-    hidden1 = Layer(type_ = "hidden", shape = [784, 1], activation = "RELU").output()
-    hidden2 = Layer(type_="hidden", shape=[784, 1], activation = "RELU").output()
-    output = Layer(type_ = "output", activation = "RELU").output()
+
+    train = pd.read_csv("DeepLearning/MNIST/mnist_train.csv")
+    X = train.drop("label", axis=1)
+    y = train["label"]
+    X = X.to_numpy()
+    y = y.to_numpy()
+    X = X / np.max(X)
+    inputLayer = Layer(type_ = "input", input_ = X).output()
+    hidden1 = Layer(type_ = "hidden", n_neurons=700, activation = "RELU").output()
+    hidden2 = Layer(type_="hidden", n_neurons=700, activation = "RELU").output()
+    output = Layer(type_ = "output", n_neurons=10, activation = "Sigmoid").output()
 
     layers = [inputLayer, hidden1, hidden2, output]
     outputPred = Train(layers, epochs=10).train()
