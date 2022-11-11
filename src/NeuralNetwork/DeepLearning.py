@@ -90,19 +90,6 @@ class DeepLearning(ActivationFunctions):
         l = (calculated - actual) ** 2
         return l
 
-    def loss(self, X, Y):
-        return np.vectorize(self.RSS)(X, Y)
-
-    def gradientDescent(self, gradient, start, learn_rate, n_iter=50):
-        v = start
-        diff = - learn_rate * gradient(v)
-        v += diff
-        return v
-
-    def optimization(self, optimizer):
-        if str(optimizer).lower() == "sgd":
-            pass
-
     def decodeOutput(self, x):
         shape = x.shape[0]
         return np.argmax(x, axis=1).reshape(shape, 1)
@@ -227,24 +214,19 @@ class Model(DeepLearning, ActivationFunctions):
                     ActivationOutput.append(k)
                     X = k  # 60000X700
                     p = p + 1
-                #                     if kk == 0:
-                #                         print(X)
+
                 W = Weights[p]
                 hiddeninput_ = self.activationInput(X, W)
                 ActivationInput.append(hiddeninput_)
                 outputCalculated = self.activationOutput(output[0], hiddeninput_)
                 ActivationOutput.append(outputCalculated)
-                #                 if kk == 0:
-                #                     print(outputCalculated)
 
                 ####BackProp
                 n = -1
                 X = np.atleast_2d(inp)
                 layer = len(self.layers[:0:-1]) - 1
                 C_ = (outputCalculated - self.actual[kk])  #### 60000X10
-                #                 if kk == 0:
-                #                     print(C_**2)
-                #                     print(self.actual[kk])
+
                 ####Initialize D:
                 D = []
                 D.append(C_ * self.activationOutput(activation=self.layers[n][0],
@@ -264,21 +246,16 @@ class Model(DeepLearning, ActivationFunctions):
                     else:
                         Weights[n - 1] = Weights[n - 1] - (self.learningRate * ActivationOutput[n - 2].T.dot(D[x + 1]))
 
-                    #                         D.append(delta)
                     n = n - 1
                     layer = layer - 1
                     x = x + 1
                 OutPutConsolidated.append(outputCalculated)
                 kk = kk + 1
             finalOutput = np.vstack(OutPutConsolidated)
-
-            #             print("Accuracy = %s" % self.getAccuracy(self.decodeOutput(finalOutput),
-            #                                                      self.decodeOutput(self.actual)))
-            print("Error = " + str(np.sum((finalOutput - self.actual) ** 2)))
+            print("Loss = " + str(np.sum(self.RSS(finalOutput, self.actual))))
             E.append(np.sum((finalOutput - self.actual) ** 2))
             self.plotErrors(figure, line1, i, E)
 
-            # predictedOut = self.predict(input_layer, Weights, self.actual)
             print("Accuracy on train dataset = " + str(self.getAccuracy(self.decodeOutput(finalOutput), self.decodeOutput(self.actual))))
             if EvaluateOnTest == True:
                 print("Accuracy on test dataset = " + str(
@@ -302,18 +279,14 @@ class Model(DeepLearning, ActivationFunctions):
                 ActivationOutput.append(k)
                 X = k  # 60000X700
                 p = p + 1
-            #                     if kk == 0:
-            #                         print(X)
+
             W = Weights[p]
             hiddeninput_ = self.activationInput(X, W)
             ActivationInput.append(hiddeninput_)
             outputCalculated = self.activationOutput(output[0], hiddeninput_)
-            #             outputCalculated = outputCalculated/np.max(outputCalculated)
             ActivationOutput.append(outputCalculated)
             OutPutConsolidated.append(np.argmax(outputCalculated))
         finalOutput = np.vstack(OutPutConsolidated)
-
-        # print("Accuracy = " + str(self.getAccuracy(finalOutput, self.decodeOutput(y))))
         return finalOutput
 
 
@@ -340,4 +313,4 @@ if __name__ == "__main__":
     output = Layer(type_="output", n_neurons=10, activation="Sigmoid").output()
 
     layers = [inputLayer, hidden1, hidden2, output]
-    Weights = Model(layers=layers, learningRate=0.01, epochs=24, actual=y, X_test=X_test, y_test=y_test).train(EvaluateOnTest=True)
+    Weights = Model(layers=layers, learningRate=0.01, epochs=3, actual=y, X_test=X_test, y_test=y_test).train(EvaluateOnTest=True)
