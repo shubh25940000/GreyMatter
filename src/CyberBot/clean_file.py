@@ -2,7 +2,7 @@ import pandas as pd
 """The main function of this file is to clean up the file.
  That includes removing nulls, removing unimportant features, handling missing values etc."""
 
-class EDA:
+class clean_file:
     def __init__(self, df):
         self.df = df
 
@@ -16,16 +16,20 @@ class EDA:
     def drop_nulls(self):
         nulls = self.check_nulls()
         if len(nulls) > 0:
-            cols = list(nulls[nulls['NaN'] >= 25]['Columns'])
-            self.df.drop(cols, inplace=True, axis = 1)
-            return self.df
+            cols = list(nulls[nulls['NaN'] >= 15]['Columns'])
+            df.drop(cols, inplace=True, axis = 1)
+            return df
 
 if __name__ == "__main__":
-    df = pd.read_csv('Files/test.csv')
-    E1 = EDA(df)
+    df = pd.read_csv('/Users/shubhamchoudhury/Documents/Data Science/Machine learning/Self training/Life Expectancy Data.csv')
+    E1 = clean_file(df)
     df = E1.drop_nulls()
-    nulls = E1.check_nulls()
-    print(nulls)
+    df.to_csv('/Users/shubhamchoudhury/Documents/Data Science/Machine learning/Self training/Removed_Nulls.csv', index = False)
+
+
+
+
+
 
 
 
