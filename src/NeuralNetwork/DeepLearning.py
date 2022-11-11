@@ -4,7 +4,7 @@ import numpy as np
 import math
 import time
 import matplotlib.pyplot as plt
-
+import pickle
 
 class ActivationFunctions:
     def __init__(self):
@@ -17,6 +17,12 @@ class ActivationFunctions:
         :return:
         """
         return np.maximum(0, x)
+
+    def RELUDeriv(self, x):
+        if x <= 0:
+            return 0.0
+        else:
+            return 1.0
 
     def sigmoid(self, x):
         """
@@ -52,8 +58,7 @@ class ActivationFunctions:
             if derivative == None:
                 return np.vectorize(self.RELU)
             else:
-                f = lambda x: 0 if x <= 0 else 1
-                return np.vectorize(f)
+                return np.vectorize(self.RELUDeriv)
         elif str(activation).lower() == "sigmoid":
             if derivative == None:
                 return np.vectorize(self.sigmoid)
@@ -113,10 +118,34 @@ class DeepLearning(ActivationFunctions):
                 c += 1
         return str(round(((c / actual.shape[0]) * 100), 2)) + "%"
 
-
-class LossFunctions:
-    def __init__(self):
-        pass
+    def predict(self, X, Weights):
+        OutPutConsolidated = []
+        for inp in X:
+            ####Forward pass
+            ActivationInput = []
+            ActivationOutput = []
+            X = np.atleast_2d(inp)
+            n_input_features = X.shape[1]  # 784
+            p = 0
+            for j in Model.layers[1:-1]:
+                W = Weights[p]
+                hiddeninput_ = self.activationInput(X, W)
+                ActivationInput.append(hiddeninput_)
+                k = self.activationOutput(j[0], hiddeninput_)
+                ActivationOutput.append(k)
+                X = k  # 60000X700
+                p = p + 1
+            #                     if kk == 0:
+            #                         print(X)
+            W = Weights[p]
+            hiddeninput_ = self.activationInput(X, W)
+            ActivationInput.append(hiddeninput_)
+            outputCalculated = self.activationOutput(output[0], hiddeninput_)
+            #             outputCalculated = outputCalculated/np.max(outputCalculated)
+            ActivationOutput.append(outputCalculated)
+            OutPutConsolidated.append(np.argmax(outputCalculated))
+        finalOutput = np.vstack(OutPutConsolidated)
+        return finalOutput
 
 
 class Layer(DeepLearning):
@@ -195,7 +224,7 @@ class Model(DeepLearning, ActivationFunctions):
         print("Weights are initilized")
         E = []
         for i in range(self.epochs):
-            print("Epoch = %d" % i)
+            print("Epoch = %d" % (i + 1))
             kk = 0
             OutPutConsolidated = []
             input_layer = self.layers[0]
@@ -262,32 +291,6 @@ class Model(DeepLearning, ActivationFunctions):
                     self.getAccuracy(self.predict(self.X_test, Weights), self.decodeOutput(self.y_test))))
         return Weights
 
-    def predict(self, X, Weights):
-        OutPutConsolidated = []
-        for inp in X:
-            ####Forward pass
-            ActivationInput = []
-            ActivationOutput = []
-            X = np.atleast_2d(inp)
-            n_input_features = X.shape[1]  # 784
-            p = 0
-            for j in self.layers[1:-1]:
-                W = Weights[p]
-                hiddeninput_ = self.activationInput(X, W)
-                ActivationInput.append(hiddeninput_)
-                k = self.activationOutput(j[0], hiddeninput_)
-                ActivationOutput.append(k)
-                X = k  # 60000X700
-                p = p + 1
-
-            W = Weights[p]
-            hiddeninput_ = self.activationInput(X, W)
-            ActivationInput.append(hiddeninput_)
-            outputCalculated = self.activationOutput(output[0], hiddeninput_)
-            ActivationOutput.append(outputCalculated)
-            OutPutConsolidated.append(np.argmax(outputCalculated))
-        finalOutput = np.vstack(OutPutConsolidated)
-        return finalOutput
 
 
 if __name__ == "__main__":
@@ -302,15 +305,22 @@ if __name__ == "__main__":
         y = np.vstack(y)
         X = X / np.max(X)
         return X, y
-    train = pd.read_csv("/Users/shubhamchoudhury/Documents/Research/DeepLearning/MNIST/mnist_train.csv")
-    test = pd.read_csv("/Users/shubhamchoudhury/Documents/Research/DeepLearning/MNIST/mnist_test.csv")
+    train = pd.read_csv("/Users/shubhamchoudhury/Documents/Research/DeepLearning/FashionMNIST/fashion-mnist_train.csv")
+    test = pd.read_csv("/Users/shubhamchoudhury/Documents/Research/DeepLearning/FashionMNIST/fashion-mnist_test.csv")
 
     X, y = preprocessing(train)
     X_test, y_test = preprocessing(test)
     inputLayer = Layer(type_="input", input_=X).output()
-    hidden1 = Layer(type_="hidden", n_neurons=100, activation="Sigmoid").output()
+    hidden1 = Layer(type_="hidden", n_neurons=300, activation="Sigmoid").output()
     hidden2 = Layer(type_="hidden", n_neurons=100, activation="Sigmoid").output()
     output = Layer(type_="output", n_neurons=10, activation="Sigmoid").output()
 
     layers = [inputLayer, hidden1, hidden2, output]
-    Weights = Model(layers=layers, learningRate=0.01, epochs=3, actual=y, X_test=X_test, y_test=y_test).train(EvaluateOnTest=True)
+    Model = Model(layers=layers, learningRate=0.01, epochs=30, actual=y, X_test=X_test, y_test=y_test)
+    Weights = Model.train(EvaluateOnTest=True)
+
+    with open("Models\FashionMNIST\Weights.pkl", "wb") as f:
+        pickle.dump(Weights, f)
+
+    with open("Models\FashionMNIST\Model.pkl", "wb") as f:
+        pickle.dump(Model, f)
